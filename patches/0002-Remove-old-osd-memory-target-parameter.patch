@@ -1,0 +1,29 @@
+From bce6600cf593a2135cfa396d52e308020b65f2bb Mon Sep 17 00:00:00 2001
+From: Ben Grabham <git@chillichef.com>
+Date: Thu, 21 May 2020 22:10:58 +0000
+Subject: [PATCH] Remove old osd-memory-target parameter
+
+---
+ pkg/operator/ceph/cluster/osd/spec.go | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/pkg/operator/ceph/cluster/osd/spec.go b/pkg/operator/ceph/cluster/osd/spec.go
+index d0d35ba9..4069cc43 100644
+--- a/pkg/operator/ceph/cluster/osd/spec.go
++++ b/pkg/operator/ceph/cluster/osd/spec.go
+@@ -245,12 +245,6 @@ func (c *Cluster) makeDeployment(osdProps osdProperties, osd OSDInfo, provisionC
+ 		}
+ 	}
+ 
+-	// As of Nautilus Ceph auto-tunes its osd_memory_target on the fly so we don't need to force it
+-	if !c.resources.Limits.Memory().IsZero() {
+-		osdMemoryTargetValue := float32(c.resources.Limits.Memory().Value()) * osdMemoryTargetSafetyFactor
+-		commonArgs = append(commonArgs, fmt.Sprintf("--osd-memory-target=%d", int(osdMemoryTargetValue)))
+-	}
+-
+ 	commonArgs = append(commonArgs, "--default-log-to-file", "false")
+ 	commonArgs = append(commonArgs, osdOnSDNFlag(c.Network)...)
+ 
+-- 
+2.25.3
+
