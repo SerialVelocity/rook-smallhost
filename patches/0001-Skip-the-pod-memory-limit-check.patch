@@ -1,0 +1,28 @@
+From 5c47b66835f7edabe8b81876d2747498a5fef4e2 Mon Sep 17 00:00:00 2001
+From: Ben Grabham <git@chillichef.com>
+Date: Thu, 21 May 2020 12:49:22 +0000
+Subject: [PATCH] Skip the pod memory limit check
+
+---
+ pkg/operator/ceph/controller/spec.go | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/pkg/operator/ceph/controller/spec.go b/pkg/operator/ceph/controller/spec.go
+index 7cbe2439..30351efd 100644
+--- a/pkg/operator/ceph/controller/spec.go
++++ b/pkg/operator/ceph/controller/spec.go
+@@ -330,6 +330,11 @@ func CheckPodMemory(resources v1.ResourceRequirements, cephPodMinimumMemory uint
+ 		return nil
+ 	}
+ 
++	// Skip this check
++	if !podMemoryLimit.IsZero() {
++		return nil
++	}
++
+ 	if !podMemoryLimit.IsZero() {
+ 		// This means LIMIT and REQUEST are either identical or different but still we use LIMIT as a reference
+ 		if uint64(podMemoryLimit.Value()) < display.MbTob(cephPodMinimumMemory) {
+-- 
+2.25.3
+

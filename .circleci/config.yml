@@ -1,0 +1,49 @@
+version: 2
+jobs:
+  build:
+    machine:
+      image: ubuntu-1604:202004-01
+    working_directory: ~/rook-smallhost
+    steps:
+    - run:
+        name: Install dependencies
+        command: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binfmt-support qemu-user-static
+    - run:
+        name: Setup cross-compile
+        command: |
+          docker run --rm --privileged hypriot/qemu-register
+    - checkout
+    - run:
+        name: Clone rook repo
+        command: |
+          git clone https://github.com/rook/rook.git ~/rook
+    - run:
+        name: Make rook docker image
+        working_directory: ~/rook
+        command: |
+          for VERSION in v1.3.4; do
+            git checkout "${VERSION}"
+            for PATCH in ~/rook-smallhost/patches/*.patch; do
+              echo "Applying ${PATCH}" >&2
+              git apply "${PATCH}"
+            done
+            build/run make VERSION="${VERSION}" IMAGES=ceph build.all
+            build/run make -C build/release VERSION="${VERSION}" IMAGES=ceph build.all.images
+          done
+    - run:
+        name: Tag and push images
+        command: |
+          echo '{"experimental":"enabled"}' > ~/.docker/config.json
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          for VERSION in v1.3.4; do
+            docker tag "rook/ceph-arm64:${VERSION}" "chillichef/rook-smallhost:${VERSION}-arm64"
+            docker tag "rook/ceph-amd64:${VERSION}" "chillichef/rook-smallhost:${VERSION}-amd64"
+            docker push "chillichef/rook-smallhost:${VERSION}-arm64"
+            docker push "chillichef/rook-smallhost:${VERSION}-amd64"
+            docker manifest create "chillichef/rook-smallhost:${VERSION}" \
+                --amend "chillichef/rook-smallhost:${VERSION}-amd64" \
+                --amend "chillichef/rook-smallhost:${VERSION}-arm64"
+            docker manifest push --purge "chillichef/rook-smallhost:${VERSION}"
+          done
