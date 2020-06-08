@@ -23,9 +23,11 @@ jobs:
         name: Make rook docker image
         working_directory: ~/rook
         command: |
-          for VERSION in v1.3.4; do
-            git checkout "${VERSION}"
-            for PATCH in ~/rook-smallhost/patches/*.patch; do
+          for VERSION in v1.3.4 v1.3.5; do
+            # Some files are owned by root after build/run
+            sudo git clean -fdx
+            git checkout -f "${VERSION}" --
+            for PATCH in ~/rook-smallhost/patches/"${VERSION}"/*.patch; do
               echo "Applying ${PATCH}" >&2
               git apply "${PATCH}"
             done
@@ -36,8 +38,8 @@ jobs:
         name: Tag and push images
         command: |
           echo '{"experimental":"enabled"}' > ~/.docker/config.json
-          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-          for VERSION in v1.3.4; do
+          echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+          for VERSION in v1.3.4 v1.3.5; do
             docker tag "rook/ceph-arm64:${VERSION}" "chillichef/rook-smallhost:${VERSION}-arm64"
             docker tag "rook/ceph-amd64:${VERSION}" "chillichef/rook-smallhost:${VERSION}-amd64"
             docker push "chillichef/rook-smallhost:${VERSION}-arm64"
