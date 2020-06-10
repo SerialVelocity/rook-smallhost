@@ -1,0 +1,45 @@
+From 8e52cb72b4a827777efa5bc030e59d2cb568a972 Mon Sep 17 00:00:00 2001
+From: Ben Grabham <git@chillichef.com>
+Date: Wed, 10 Jun 2020 23:46:06 +0000
+Subject: [PATCH 3/3] Remove liveness probe to significantly reduce CPU usage
+
+---
+ pkg/operator/ceph/controller/spec.go | 22 +---------------------
+ 1 file changed, 1 insertion(+), 21 deletions(-)
+
+diff --git a/pkg/operator/ceph/controller/spec.go b/pkg/operator/ceph/controller/spec.go
+index 30351efd..fbfe8981 100644
+--- a/pkg/operator/ceph/controller/spec.go
++++ b/pkg/operator/ceph/controller/spec.go
+@@ -471,27 +471,7 @@ func StoredLogAndCrashVolumeMount(varLogCephDir, varLibCephCrashDir string) []v1
+ 
+ // GenerateLivenessProbeExecDaemon makes sure a daemon has a socket and that it can be called and returns 0
+ func GenerateLivenessProbeExecDaemon(daemonType, daemonID string) *v1.Probe {
+-	confDaemon := getDaemonConfig(daemonType, daemonID)
+-
+-	return &v1.Probe{
+-		Handler: v1.Handler{
+-			Exec: &v1.ExecAction{
+-				// Run with env -i to clean env variables in the exec context
+-				// This avoids conflict with the CEPH_ARGS env
+-				//
+-				// Example:
+-				// env -i sh -c ceph --admin-daemon /run/ceph/ceph-osd.0.asok status
+-				Command: []string{
+-					"env",
+-					"-i",
+-					"sh",
+-					"-c",
+-					fmt.Sprintf("ceph --admin-daemon %s %s", confDaemon.buildSocketPath(), confDaemon.buildAdminSocketCommand()),
+-				},
+-			},
+-		},
+-		InitialDelaySeconds: 10,
+-	}
++	return nil
+ }
+ 
+ func getDaemonConfig(daemonType, daemonID string) *daemonConfig {
+-- 
+2.25.4
+
